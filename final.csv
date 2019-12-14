@@ -1,4 +1,4 @@
-,id,host_id,neighbourhood_cleansed,latitude,longitude,bathrooms,bedrooms,beds,price,cleaning_fee,availability_30,availability_60,availability_90,availability_365,number_of_reviews,review_scores_rating,total_price,tipo,ingresos_25p,ingresos_50p,ingresos_75p,ingresos_100p
+,id,host_id,comuna,latitude,longitude,bathrooms,bedrooms,beds,price,cleaning_fee,availability_30,availability_60,availability_90,availability_365,number_of_reviews,review_scores_rating,total_price,tipo,ingresos_25p,ingresos_50p,ingresos_75p,ingresos_100p
 2,50474,231667,Las Condes,-33.41014000000001,-70.57585,1,1,1.0,36864.0,36864.0,9,22,52,327,90,92.0,73728.0,1D+1B,405504.0,589824.0,774144.0,1142784.0
 3,52811,244792,Providencia,-33.42889,-70.61988000000001,1,1,1.0,50269.0,26810.0,28,58,88,363,42,91.0,77079.0,1D+1B,529500.0,780845.0,1032190.0,1534880.0
 4,53917,252213,Santiago,-33.43524,-70.64544000000001,1,1,1.0,28150.0,0.0,0,3,33,33,7,94.0,28150.0,1D+1B,281500.0,422250.0,563000.0,844500.0
