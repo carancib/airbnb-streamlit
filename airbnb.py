@@ -10,22 +10,31 @@ Por: [Carlos Arancibia](http://carancib.co)
 
 Data original : Inside Airbnb, 15-03-2019 (http://insideairbnb.com/get-the-data.html)
 
-Esta web-app fue hecha con el fin de probar [Streamlit](https://streamlit.io/), un framework HECHO para disponibilizar herramientas de Machine Learning y
-análisis de datos. Está corriendo en una instancia gratuita T2-micro de AWS.
+Esta web-app fue hecha con el fin de probar [Streamlit](https://streamlit.io/), un framework hecho para disponibilizar herramientas de Machine Learning y
+análisis de datos de forma rápida e interactiva. Está corriendo en una instancia gratuita T2-micro de AWS.
 
 Realicé una limpieza de datos previa para dejar sólo los Departamentos Enteros que estuvieran en las comunas con más de 50 publicaciones.
 """
 
-data = pd.read_csv('final.csv')
+
+@st.cache
+def load_data(file):
+    df = pd.read_csv(file)
+    return df
+
+data = load_data('final.csv')
 
 """
 Primero veremos la distribucion por comunas:
 """
+@st.cache
+def dist_comuna(data):
+    value_counts = data.comuna.value_counts()
+    value_per = data.comuna.value_counts(normalize=True)
+    total = pd.concat([value_counts,value_per], axis=1, keys=['counts', '%'])
+    return total
 
-value_counts = data.comuna.value_counts()
-value_per = data.comuna.value_counts(normalize=True)
-total = pd.concat([value_counts,value_per], axis=1, keys=['counts', '%'])
-
+total = dist_comuna(data)
 total
 
 """
@@ -40,10 +49,14 @@ por personas que viajan por trabajo, y quieren estar más cerca del centro finan
 Ahora veremos la distribucion por tipo de departamento:
 """
 
-tipo_counts = data.tipo.value_counts()
-tipo_per = data.tipo.value_counts(normalize=True)
-tipo_total = pd.concat([tipo_counts,tipo_per], axis=1, keys=['counts', '%'])
+@st.cache
+def dist_tipo(data):
+    tipo_counts = data.tipo.value_counts()
+    tipo_per = data.tipo.value_counts(normalize=True)
+    tipo_total = pd.concat([tipo_counts,tipo_per], axis=1, keys=['counts', '%'])
+    return tipo_total
 
+tipo_total = dist_tipo(data)
 tipo_total
 
 """
@@ -56,9 +69,13 @@ Desagregaremos el precio promedio por noche, por tipo de departamento y comuna
 """
 orden_comunas=['Vitacura', 'Las Condes', 'Providencia', 'Ñuñoa', 'Santiago', 'Recoleta', 'Estación Central']
 
-precio_promedio = data.groupby(['tipo', 'comuna'])['price'].mean().round().unstack()
+@st.cache
+def get_precio_promedio(data):
+    precio_promedio = data.groupby(['tipo', 'comuna'])['price'].mean().round().unstack()
+    return precio_promedio[orden_comunas]
 
-precio_promedio[orden_comunas]
+precio_promedio = get_precio_promedio(data)
+precio_promedio
 
 """
 Supongo que como es esperado, los valores por noche se correlacionan con el valor del m2 en cada comuna, siendo las comunas
@@ -71,19 +88,27 @@ bastante más económicos que un hotel si consideramos la cantidad de gente que 
 Desagregaremos la cantidad de publicaciones por tipo de departamento y comuna
 """
 
-cantidad = data.groupby(['tipo', 'comuna'])['price'].count().round().unstack()
+@st.cache
+def get_tipo_cant(data):
+    cantidad = data.groupby(['tipo', 'comuna'])['price'].count().round().unstack()
+    return cantidad[orden_comunas]
 
-cantidad[orden_comunas]
+cantidad = get_tipo_cant(data)
+cantidad
 
 """
 También me pareció importante averiguar que porcentaje de los hosts en la plataforma tienen más de una propiedad
 """
+@st.cache
+def contar_hosts(data):
+    host_count = pd.DataFrame(data.groupby('host_id')['id'].count()).sort_values(by='id', ascending=0).id.value_counts()
+    host_per = pd.DataFrame(data.groupby('host_id')['id'].count()).sort_values(by='id', ascending=0).id.value_counts(normalize=True)
+    host_total = pd.concat([host_count,host_per], axis=1, keys=['counts', '%'])
+    host_total['cantidad propiedades'] = host_total.index
+    superhost = host_total[['cantidad propiedades', 'counts', '%']].sort_values(by='cantidad propiedades')
+    return superhost
 
-host_count = pd.DataFrame(data.groupby('host_id')['id'].count()).sort_values(by='id', ascending=0).id.value_counts()
-host_per = pd.DataFrame(data.groupby('host_id')['id'].count()).sort_values(by='id', ascending=0).id.value_counts(normalize=True)
-host_total = pd.concat([host_count,host_per], axis=1, keys=['counts', '%'])
-host_total['cantidad propiedades'] = host_total.index
-superhost = host_total[['cantidad propiedades', 'counts', '%']].sort_values(by='cantidad propiedades')
+superhost = contar_hosts(data)
 superhost
 
 """
@@ -99,88 +124,91 @@ que hay más de 100 hosts con 5 o más propiedades, y que el mayor tenga **93** 
 midpoint = (np.average(data['latitude']), np.average(data['longitude']))
 
 #Va una layer por cada comuna
-h = st.deck_gl_chart(
-    viewport={
-        "latitude": midpoint[0],
-        "longitude": midpoint[1],
-        "zoom": 11,
-        "pitch": 0
-    },
-    layers=[  
-        {
-         'id': "scat-blue",
-         'type': 'ScatterplotLayer',
-         'data': data[data.comuna == 'Las Condes'],
-         'opacity': 0.5,
-         'getColor': [75,205,250],
-         'pickable': True,
-         'autoHighlight': True,
-         'getRadius': 10,
-         'radiusMinPixels': 1,
-          },{
-         'id': 'scat-red',
-         'type': 'ScatterplotLayer',
-         'data': data[data.comuna == 'Providencia'],
-         'opacity': 0.5,
-         'getColor': [255,94,87],
-         'autoHighlight': True,
-         'pickable': True,
-         'getRadius': 10,
-         'radiusMinPixels': 1,
-         },{
-         'id': 'scat-green',
-         'type': 'ScatterplotLayer',
-         'data': data[data.comuna == 'Santiago'],
-         'opacity': 0.5,
-         'getColor': [50,205,50],
-         'autoHighlight': True,
-         'pickable': True,
-         'getRadius': 10,
-         'radiusMinPixels': 1,
-         },{
-         'id': 'scat-purple',
-         'type': 'ScatterplotLayer',
-         'data': data[data.comuna == 'Ñuñoa'],
-         'opacity': 0.5,
-         'getColor': [138,43,226],
-         'autoHighlight': True,
-         'pickable': True,
-         'getRadius': 10,
-         'radiusMinPixels': 1,
-         },{
-         'id': 'scat-orange',
-         'type': 'ScatterplotLayer',
-         'data': data[data.comuna == 'Recoleta'],
-         'opacity': 0.5,
-         'getColor': [255,165,0],
-         'autoHighlight': True,
-         'pickable': True,
-         'getRadius': 10,
-         'radiusMinPixels': 1,
-         },{
-         'id': 'scat-pink',
-         'type': 'ScatterplotLayer',
-         'data': data[data.comuna == 'Vitacura'],
-         'opacity': 0.5,
-         'getColor': [255,108,180],
-         'autoHighlight': True,
-         'pickable': True,
-         'getRadius': 10,
-         'radiusMinPixels': 1,
-         },{
-         'id': 'scat-brown',
-         'type': 'ScatterplotLayer',
-         'data': data[data.comuna == 'Estación Central'],
-         'opacity': 0.5,
-         'getColor': [139,69,19],
-         'autoHighlight': True,
-         'pickable': True,
-         'getRadius': 10,
-         'radiusMinPixels': 1,
-         }
-     ] 
-)
+def plot_map(data):
+    h = st.deck_gl_chart(
+        viewport={
+            "latitude": midpoint[0],
+            "longitude": midpoint[1],
+            "zoom": 11,
+            "pitch": 0
+        },
+        layers=[  
+            {
+            'id': "scat-blue",
+            'type': 'ScatterplotLayer',
+            'data': data[data.comuna == 'Las Condes'],
+            'opacity': 0.5,
+            'getColor': [75,205,250],
+            'pickable': True,
+            'autoHighlight': True,
+            'getRadius': 10,
+            'radiusMinPixels': 1,
+            },{
+            'id': 'scat-red',
+            'type': 'ScatterplotLayer',
+            'data': data[data.comuna == 'Providencia'],
+            'opacity': 0.5,
+            'getColor': [255,94,87],
+            'autoHighlight': True,
+            'pickable': True,
+            'getRadius': 10,
+            'radiusMinPixels': 1,
+            },{
+            'id': 'scat-green',
+            'type': 'ScatterplotLayer',
+            'data': data[data.comuna == 'Santiago'],
+            'opacity': 0.5,
+            'getColor': [50,205,50],
+            'autoHighlight': True,
+            'pickable': True,
+            'getRadius': 10,
+            'radiusMinPixels': 1,
+            },{
+            'id': 'scat-purple',
+            'type': 'ScatterplotLayer',
+            'data': data[data.comuna == 'Ñuñoa'],
+            'opacity': 0.5,
+            'getColor': [138,43,226],
+            'autoHighlight': True,
+            'pickable': True,
+            'getRadius': 10,
+            'radiusMinPixels': 1,
+            },{
+            'id': 'scat-orange',
+            'type': 'ScatterplotLayer',
+            'data': data[data.comuna == 'Recoleta'],
+            'opacity': 0.5,
+            'getColor': [255,165,0],
+            'autoHighlight': True,
+            'pickable': True,
+            'getRadius': 10,
+            'radiusMinPixels': 1,
+            },{
+            'id': 'scat-pink',
+            'type': 'ScatterplotLayer',
+            'data': data[data.comuna == 'Vitacura'],
+            'opacity': 0.5,
+            'getColor': [255,108,180],
+            'autoHighlight': True,
+            'pickable': True,
+            'getRadius': 10,
+            'radiusMinPixels': 1,
+            },{
+            'id': 'scat-brown',
+            'type': 'ScatterplotLayer',
+            'data': data[data.comuna == 'Estación Central'],
+            'opacity': 0.5,
+            'getColor': [139,69,19],
+            'autoHighlight': True,
+            'pickable': True,
+            'getRadius': 10,
+            'radiusMinPixels': 1,
+            }
+        ] 
+    )
+    return h
 
+plot_map(data)
 
 """
 En el mapa podemos ver claramente cómo los alojamientos se distribuyen alrededor del eje Alameda-Providencia-Apoquindo.
