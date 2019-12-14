@@ -10,8 +10,8 @@ Por: [Carlos Arancibia](http://carancib.co)
 
 Data original : Inside Airbnb, 15-03-2019 (http://insideairbnb.com/get-the-data.html)
 
-Esta web-app fue hecha con el fin de probar [Streamlit](https://streamlit.io/), un framework recién lanzado para disponibilizar herramientas de Machine Learning y
-análisis de datos. Está corriendo en una instancia T2-micro de AWS.
+Esta web-app fue hecha con el fin de probar [Streamlit](https://streamlit.io/), un framework HECHO para disponibilizar herramientas de Machine Learning y
+análisis de datos. Está corriendo en una instancia gratuita T2-micro de AWS.
 
 Realicé una limpieza de datos previa para dejar sólo los Departamentos Enteros que estuvieran en las comunas con más de 50 publicaciones.
 """
@@ -58,7 +58,7 @@ orden_comunas=['Vitacura', 'Las Condes', 'Providencia', 'Ñuñoa', 'Santiago', '
 
 precio_promedio = data.groupby(['tipo', 'comuna'])['price'].mean().round().unstack()
 
-st.table(precio_promedio[orden_comunas])
+precio_promedio[orden_comunas]
 
 """
 Supongo que como es esperado, los valores por noche se correlacionan con el valor del m2 en cada comuna, siendo las comunas
@@ -73,7 +73,7 @@ Desagregaremos la cantidad de publicaciones por tipo de departamento y comuna
 
 cantidad = data.groupby(['tipo', 'comuna'])['price'].count().round().unstack()
 
-st.table(cantidad[orden_comunas])
+cantidad[orden_comunas]
 
 """
 También me pareció importante averiguar que porcentaje de los hosts en la plataforma tienen más de una propiedad
@@ -212,15 +212,10 @@ st.write('Ingreso mediano estimado al mes es:', '${:,.0f}'.format(np.ceil(median
 """
 Simulando un departamento en la calculadora de [AirBnB](https://www.airbnb.cl/host/homes?), vemos que un departamento para 4 personas en Providencia debería generar unos 
 780.000 mensuales, lo cual no está tan lejos de los 747.390 que estimamos con este dataset.
-"""
 
-image = Image.open('sim.png')
-st.image(image, caption='Simulación AirBnB',  width=None)
-
-"""
 *¿Será una buena inversión?*  No podemos decirlo a ciencia cierta, pero viendo que el ingreso mediano con 50% de ocupación en Santiago Centro 
 para un departamento de 2D+1B es de 502.680 y segun un estudio a comienzos de año de Edifito.com el [valor promedio de un departamento de dos habitaciones y un baño es de $320 mil](https://www.biobiochile.cl/noticias/nacional/region-metropolitana/2019/02/18/hasta-550-mil-en-arriendo-los-valores-en-las-comunas-mas-cotizadas-por-universitarios-en-santiago.shtml)
-podemos pensar que si se logra un nivel de ocupación mayor al 80%, esto puede ser un buen negocio. 
+, podemos pensar que si se logra un nivel de ocupación mayor al 80% esto puede ser un buen negocio. 
 
 Estas cifras de ingreso estimado deben ser tomadas con cautela ya que no incluyen los gastos comunes, cuentas, limpieza y reparaciones que el propietario debe hacer
 cada vez que cambia de arrendatarios. 
